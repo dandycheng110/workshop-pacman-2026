@@ -312,6 +312,98 @@ class TestGhostAI(unittest.TestCase):
         self.assertEqual(g.dx, -1)  # left = toward fixed target at col 2
 
 
+class TestPinkyAI(unittest.TestCase):
+    def _pac(self, tx, ty, dx, dy):
+        p = main.Pacman()
+        p.tx, p.ty, p.dx, p.dy = float(tx), float(ty), dx, dy
+        return p
+
+    def test_targets_4_tiles_ahead_moving_right(self):
+        pac = self._pac(5, 4, 1, 0)
+        ai = main.make_pinky_ai(pac)
+        self.assertEqual(ai(5.0, 4.0), (9.0, 4.0))
+
+    def test_targets_4_tiles_ahead_moving_up(self):
+        pac = self._pac(5, 8, 0, -1)
+        ai = main.make_pinky_ai(pac)
+        self.assertEqual(ai(5.0, 8.0), (5.0, 4.0))
+
+    def test_targets_pac_position_when_stationary(self):
+        pac = self._pac(5, 4, 0, 0)
+        ai = main.make_pinky_ai(pac)
+        self.assertEqual(ai(5.0, 4.0), (5.0, 4.0))
+
+    def test_reads_live_pac_direction(self):
+        # ai_fn reads pac.dx/dy at call time, not capture time
+        pac = self._pac(5, 4, 1, 0)
+        ai = main.make_pinky_ai(pac)
+        pac.dx, pac.dy = -1, 0
+        self.assertEqual(ai(5.0, 4.0), (1.0, 4.0))
+
+
+class TestInkyAI(unittest.TestCase):
+    def _setup(self, pac_tx, pac_ty, pac_dx, pac_dy, blinky_tx, blinky_ty):
+        pac = main.Pacman()
+        pac.tx, pac.ty, pac.dx, pac.dy = float(pac_tx), float(pac_ty), pac_dx, pac_dy
+        blinky = main.Ghost(0)
+        blinky.tx, blinky.ty = float(blinky_tx), float(blinky_ty)
+        return main.make_inky_ai(pac, blinky)
+
+    def test_doubles_vector_from_blinky_to_pivot(self):
+        # pac at (5,4) moving right, blinky at (3,4)
+        # pivot = (7,4), target = 2*(7,4) - (3,4) = (11,4)
+        ai = self._setup(5, 4, 1, 0, 3, 4)
+        self.assertEqual(ai(5.0, 4.0), (11.0, 4.0))
+
+    def test_blinky_behind_pac_extends_target_far(self):
+        # pac at (8,4) moving right, blinky at (4,4)
+        # pivot = (10,4), target = 2*(10,4) - (4,4) = (16,4)
+        ai = self._setup(8, 4, 1, 0, 4, 4)
+        self.assertEqual(ai(8.0, 4.0), (16.0, 4.0))
+
+    def test_reads_live_blinky_position(self):
+        pac = main.Pacman()
+        pac.tx, pac.ty, pac.dx, pac.dy = 5.0, 4.0, 1, 0
+        blinky = main.Ghost(0)
+        blinky.tx, blinky.ty = 3.0, 4.0
+        ai = main.make_inky_ai(pac, blinky)
+        blinky.tx = 1.0  # blinky moves; pivot still (7,4), target = 2*7-1=13
+        self.assertEqual(ai(5.0, 4.0), (13.0, 4.0))
+
+
+class TestClydeAI(unittest.TestCase):
+    CORNER = (1.0, float(main.ROWS - 2))
+
+    def _clyde_at(self, tx, ty):
+        g = main.Ghost(3)
+        g.tx, g.ty = float(tx), float(ty)
+        return g
+
+    def test_chases_when_far(self):
+        # dist(1,4 → 10,4) = 9 > 8 → target = Pac-Man
+        clyde = self._clyde_at(1, 4)
+        ai = main.make_clyde_ai(clyde, *self.CORNER)
+        self.assertEqual(ai(10.0, 4.0), (10.0, 4.0))
+
+    def test_retreats_to_corner_when_close(self):
+        # dist(9,4 → 10,4) = 1 ≤ 8 → target = corner
+        clyde = self._clyde_at(9, 4)
+        ai = main.make_clyde_ai(clyde, *self.CORNER)
+        self.assertEqual(ai(10.0, 4.0), self.CORNER)
+
+    def test_threshold_is_exactly_8_tiles(self):
+        # dist = exactly 8 → corner (not strictly greater)
+        clyde = self._clyde_at(2, 4)
+        ai = main.make_clyde_ai(clyde, *self.CORNER)
+        self.assertEqual(ai(10.0, 4.0), self.CORNER)
+
+    def test_reads_live_clyde_position(self):
+        clyde = self._clyde_at(9, 4)   # starts close → corner
+        ai = main.make_clyde_ai(clyde, *self.CORNER)
+        clyde.tx = 1.0                  # moves far → should now chase
+        self.assertEqual(ai(10.0, 4.0), (10.0, 4.0))
+
+
 class TestNearGrid(unittest.TestCase):
     def test_exact_integer_is_near(self):
         self.assertTrue(main.near_grid(3.0))

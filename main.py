@@ -104,6 +104,29 @@ def chase_ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
     return pac_tx, pac_ty
 
 
+def make_pinky_ai(pac):
+    def ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
+        return pac_tx + 4 * pac.dx, pac_ty + 4 * pac.dy
+    return ai
+
+
+def make_inky_ai(pac, blinky):
+    def ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
+        pivot_x = pac_tx + 2 * pac.dx
+        pivot_y = pac_ty + 2 * pac.dy
+        return 2 * pivot_x - blinky.tx, 2 * pivot_y - blinky.ty
+    return ai
+
+
+def make_clyde_ai(clyde, corner_x: float, corner_y: float):
+    def ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
+        dist2 = (clyde.tx - pac_tx) ** 2 + (clyde.ty - pac_ty) ** 2
+        if dist2 > 64:  # > 8 tiles
+            return pac_tx, pac_ty
+        return corner_x, corner_y
+    return ai
+
+
 class Pacman:
     def __init__(self):
         self.reset()
@@ -241,6 +264,9 @@ class App:
         self.build_dots()
         self.pac = Pacman()
         self.ghosts = [Ghost(i) for i in range(4)]
+        self.ghosts[1].ai_fn = make_pinky_ai(self.pac)
+        self.ghosts[2].ai_fn = make_inky_ai(self.pac, self.ghosts[0])
+        self.ghosts[3].ai_fn = make_clyde_ai(self.ghosts[3], 1.0, float(ROWS - 2))
 
     def build_dots(self):
         self.dots = {}
