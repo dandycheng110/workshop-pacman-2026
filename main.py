@@ -75,6 +75,35 @@ def is_blocked(nx: float, ny: float, margin: float) -> bool:
     return any(is_wall(int(px), int(py)) for px, py in corners)
 
 
+_DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+
+
+def pick_direction(
+    itx: int, ity: int,
+    dx: int, dy: int,
+    target_x: float, target_y: float,
+    flee: bool = False,
+) -> tuple[int, int] | None:
+    best: tuple[int, int] | None = None
+    best_score: float | None = None
+    for ddx, ddy in _DIRS:
+        if ddx == -dx and ddy == -dy:
+            continue
+        ntx, nty = itx + ddx, ity + ddy
+        if is_wall(ntx, nty):
+            continue
+        dist2 = (ntx - target_x) ** 2 + (nty - target_y) ** 2
+        score = -dist2 if flee else dist2
+        if best_score is None or score < best_score:
+            best_score = score
+            best = (ddx, ddy)
+    return best
+
+
+def chase_ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
+    return pac_tx, pac_ty
+
+
 class Pacman:
     def __init__(self):
         self.reset()
@@ -149,10 +178,9 @@ class Pacman:
 
 
 class Ghost:
-    DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
-
     def __init__(self, idx):
         self.idx = idx
+        self.ai_fn = chase_ai
         self.reset()
 
     def reset(self):
@@ -172,22 +200,8 @@ class Ghost:
         if near_grid(self.tx) and near_grid(self.ty):
             itx = int(round(self.tx))
             ity = int(round(self.ty))
-            best = None
-            best_score = None
-            for ddx, ddy in self.DIRS:
-                if ddx == -self.dx and ddy == -self.dy:
-                    continue
-                ntx = itx + ddx
-                nty = ity + ddy
-                if is_wall(ntx, nty):
-                    continue
-                if self.scared:
-                    score = -((ntx - pac_tx) ** 2 + (nty - pac_ty) ** 2)
-                else:
-                    score = (ntx - pac_tx) ** 2 + (nty - pac_ty) ** 2
-                if best_score is None or score < best_score:
-                    best_score = score
-                    best = (ddx, ddy)
+            target = self.ai_fn(pac_tx, pac_ty)
+            best = pick_direction(itx, ity, self.dx, self.dy, *target, flee=self.scared)
             if best:
                 self.dx, self.dy = best
 

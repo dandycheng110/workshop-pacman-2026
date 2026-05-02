@@ -249,6 +249,31 @@ class TestAppScoring(unittest.TestCase):
             self.assertFalse(main.is_wall(tx, ty), f"Dot placed in wall at ({tx},{ty})")
 
 
+class TestPickDirection(unittest.TestCase):
+    # Same corridor: row 4, col 7 — only left/right valid.
+
+    def test_picks_direction_toward_target(self):
+        # target to the right → should pick (1, 0)
+        result = main.pick_direction(7, 4, 0, 0, 12.0, 4.0)
+        self.assertEqual(result, (1, 0))
+
+    def test_picks_direction_away_from_target(self):
+        # target to the right, moving away → should pick (-1, 0)
+        result = main.pick_direction(7, 4, 0, 0, 12.0, 4.0, flee=True)
+        self.assertEqual(result, (-1, 0))
+
+    def test_respects_no_reverse(self):
+        # currently moving right (dx=1); reversing to left must be excluded
+        # target is to the left, but reversal forbidden → only right is valid
+        result = main.pick_direction(7, 4, 1, 0, 2.0, 4.0)
+        self.assertEqual(result, (1, 0))
+
+    def test_returns_none_when_fully_blocked(self):
+        # position (0, 0) is a wall corner — all neighbours are walls
+        result = main.pick_direction(0, 0, 0, 0, 8.0, 8.0)
+        self.assertIsNone(result)
+
+
 class TestGhostAI(unittest.TestCase):
     # Test position (7, 4) in row 4 ("1222222222222221"):
     # walls above (3,7) and below (5,7), so only left/right are valid moves.
@@ -259,6 +284,11 @@ class TestGhostAI(unittest.TestCase):
         g.tx, g.ty = float(tx), float(ty)
         g.dx, g.dy = 0, 0  # neutral start: no direction excluded by reverse check
         return g
+
+    def test_default_ai_fn_is_chase(self):
+        # Ghost.ai_fn should return Pac-Man's position as the target
+        g = self._ghost_at(7, 4)
+        self.assertEqual(g.ai_fn(5.0, 3.0), (5.0, 3.0))
 
     def test_chases_pacman_when_not_scared(self):
         g = self._ghost_at(7, 4)
@@ -273,6 +303,13 @@ class TestGhostAI(unittest.TestCase):
         g.update(12.0, 4.0)
         self.assertEqual(g.dx, -1)  # left = away from Pac-Man
         self.assertEqual(g.dy, 0)
+
+    def test_custom_ai_fn_is_used(self):
+        # A ghost with a fixed target at (2, 4) should move left (away from right)
+        g = self._ghost_at(7, 4)
+        g.ai_fn = lambda pac_tx, pac_ty: (2.0, 4.0)
+        g.update(12.0, 4.0)
+        self.assertEqual(g.dx, -1)  # left = toward fixed target at col 2
 
 
 class TestNearGrid(unittest.TestCase):
