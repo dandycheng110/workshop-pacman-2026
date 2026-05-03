@@ -24,14 +24,14 @@ MAZE = [
     "1222222112222221",
     "1211212112121121",
     "1211212112121121",
-    "1222222222222221",
+    "1322222222222231",
     "1211212112121121",
-    "1222212112122221",
+    "2222212112122222",
     "1111214004121111",
     "1111214004121111",
-    "1222212112122221",
+    "2222212112122222",
     "1211212112121121",
-    "1222222222222221",
+    "1322222222222231",
     "1211212112121121",
     "1211212112121121",
     "1222222112222221",
@@ -54,6 +54,10 @@ GHOST_SPAWNS = [
 def tile_at(tx, ty):
     if 0 <= ty < ROWS and 0 <= tx < COLS:
         return MAZE[ty][tx]
+    if 0 <= ty < ROWS:
+        edge_col = 0 if tx < 0 else COLS - 1
+        if MAZE[ty][edge_col] != TILE_WALL:
+            return MAZE[ty][tx % COLS]
     return TILE_WALL
 
 
@@ -79,9 +83,12 @@ _DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 
 def pick_direction(
-    itx: int, ity: int,
-    dx: int, dy: int,
-    target_x: float, target_y: float,
+    itx: int,
+    ity: int,
+    dx: int,
+    dy: int,
+    target_x: float,
+    target_y: float,
     flee: bool = False,
 ) -> tuple[int, int] | None:
     best: tuple[int, int] | None = None
@@ -107,6 +114,7 @@ def chase_ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
 def make_pinky_ai(pac):
     def ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
         return pac_tx + 4 * pac.dx, pac_ty + 4 * pac.dy
+
     return ai
 
 
@@ -115,6 +123,7 @@ def make_inky_ai(pac, blinky):
         pivot_x = pac_tx + 2 * pac.dx
         pivot_y = pac_ty + 2 * pac.dy
         return 2 * pivot_x - blinky.tx, 2 * pivot_y - blinky.ty
+
     return ai
 
 
@@ -124,6 +133,7 @@ def make_clyde_ai(clyde, corner_x: float, corner_y: float):
         if dist2 > 64:  # > 8 tiles
             return pac_tx, pac_ty
         return corner_x, corner_y
+
     return ai
 
 

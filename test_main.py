@@ -439,5 +439,124 @@ class TestIsBlocked(unittest.TestCase):
         self.assertTrue(main.is_blocked(1.0, 0.85, 0.01))
 
 
+class TestTunnelMazeStructure(unittest.TestCase):
+    """Verify the maze is correctly laid out for tunnel rows."""
+
+    TUNNEL_ROWS = [6, 9]
+
+    def test_tunnel_left_edge_is_not_wall(self):
+        for ty in self.TUNNEL_ROWS:
+            self.assertFalse(main.is_wall(0, ty),
+                             f"Row {ty}: col 0 should be open (tunnel entrance)")
+
+    def test_tunnel_right_edge_is_not_wall(self):
+        for ty in self.TUNNEL_ROWS:
+            self.assertFalse(main.is_wall(main.COLS - 1, ty),
+                             f"Row {ty}: col {main.COLS - 1} should be open (tunnel entrance)")
+
+    def test_non_tunnel_rows_have_wall_edges(self):
+        for ty in range(main.ROWS):
+            if ty not in self.TUNNEL_ROWS:
+                self.assertTrue(main.is_wall(0, ty),
+                                f"Row {ty}: col 0 should be a wall")
+                self.assertTrue(main.is_wall(main.COLS - 1, ty),
+                                f"Row {ty}: col {main.COLS - 1} should be a wall")
+
+
+class TestTunnelTraversal(unittest.TestCase):
+    """Verify that entities can exit and wrap through tunnel tiles."""
+
+    TUNNEL_ROW = 6
+
+    def _pac(self, tx, ty, dx, dy):
+        pyxel_stub.btn = MagicMock(side_effect=no_input)
+        pac = main.Pacman()
+        pac.tx = float(tx)
+        pac.ty = float(ty)
+        pac.dx = dx
+        pac.dy = dy
+        pac.next_dx = dx   # persist direction across frames (no key held)
+        pac.next_dy = dy
+        return pac
+
+    # --- is_blocked ---
+
+    def test_is_blocked_does_not_block_right_tunnel_exit(self):
+        # nx=COLS-1+0.16: right bounding-box corner lands at int(COLS+0.01)=COLS
+        # which is out of bounds and currently treated as a wall — this is the bug.
+        ty = float(self.TUNNEL_ROW)
+        nx = main.COLS - 1 + 0.16
+        self.assertFalse(
+            main.is_blocked(nx, ty, 0.15),
+            "is_blocked should not block movement past the right tunnel edge"
+        )
+
+    def test_is_blocked_does_not_block_left_tunnel_exit(self):
+        # nx=-0.08: left corners land at int(0.07)=0 which is in-bounds and open.
+        # This direction already works; the test guards against regression.
+        ty = float(self.TUNNEL_ROW)
+        self.assertFalse(
+            main.is_blocked(-0.08, ty, 0.15),
+            "is_blocked should not block movement past the left tunnel edge"
+        )
+
+    # --- pick_direction ---
+
+    def test_pick_direction_allows_right_exit_at_right_tunnel_tile(self):
+        # Ghost at the rightmost tunnel tile moving right: ntx=COLS is OOB,
+        # so is_wall returns True and the direction is wrongly excluded.
+        result = main.pick_direction(
+            main.COLS - 1, self.TUNNEL_ROW,
+            dx=1, dy=0,
+            target_x=float(main.COLS + 5), target_y=float(self.TUNNEL_ROW),
+        )
+        self.assertEqual(result, (1, 0),
+                         "pick_direction should allow rightward exit at right tunnel tile")
+
+    def test_pick_direction_allows_left_exit_at_left_tunnel_tile(self):
+        # Ghost at the leftmost tunnel tile moving left: ntx=-1 is OOB.
+        result = main.pick_direction(
+            0, self.TUNNEL_ROW,
+            dx=-1, dy=0,
+            target_x=-5.0, target_y=float(self.TUNNEL_ROW),
+        )
+        self.assertEqual(result, (-1, 0),
+                         "pick_direction should allow leftward exit at left tunnel tile")
+
+    # --- end-to-end traversal ---
+
+    def test_pacman_traverses_right_tunnel(self):
+        # Pac-Man at the rightmost tunnel tile moving right should wrap to the
+        # left side. With the bug, it gets stuck at tx ≈ COLS - 0.9 (dx → 0).
+        pac = self._pac(main.COLS - 1, self.TUNNEL_ROW, dx=1, dy=0)
+        for _ in range(50):
+            pac.update({})
+        self.assertLess(
+            pac.tx, float(main.COLS) / 2,
+            f"Pac-Man should wrap to left side of tunnel (tx={pac.tx:.2f})"
+        )
+
+    def test_pacman_traverses_left_tunnel(self):
+        # Pac-Man at the leftmost tunnel tile moving left should wrap to the
+        # right side and continue moving. With the bug, it wraps but immediately
+        # gets stuck because the right bounding-box corner goes OOB.
+        pac = self._pac(0, self.TUNNEL_ROW, dx=-1, dy=0)
+        for _ in range(50):
+            pac.update({})
+        self.assertNotEqual(
+            pac.dx, 0,
+            f"Pac-Man should still be moving after traversing the left tunnel (tx={pac.tx:.2f})"
+        )
+
+    def test_pacman_tunnel_row_9_traverses_right(self):
+        pac = self._pac(main.COLS - 1, 9, dx=1, dy=0)
+        for _ in range(50):
+            pac.update({})
+        self.assertLess(
+            pac.tx, float(main.COLS) / 2,
+            f"Row-9 tunnel: Pac-Man should wrap to left side (tx={pac.tx:.2f})"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
