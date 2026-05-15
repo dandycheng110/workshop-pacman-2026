@@ -1,4 +1,4 @@
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md)
+[< 上一章：發布與打包遊戲](11-distribution.md) | [🏠 回目錄](../TUTORIAL.md)
 ---
 
 ## 附錄：常用 Pyxel API 速查
@@ -18,4 +18,4 @@
 | `pyxel.quit()` | 結束遊戲 |
 
 ---
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md)
+[< 上一章：發布與打包遊戲](11-distribution.md) | [🏠 回目錄](../TUTORIAL.md)

@@ -13,8 +13,9 @@
 7. [第七章：幽靈繪製](tutorial/07-ghost-rendering.md)
 8. [第八章：遊戲狀態機](tutorial/08-state-machine.md)
 9. [第九章：繪圖系統](tutorial/09-drawing-system.md)
-10. [延伸挑戰](tutorial/10-challenges.md)
-11. [附錄：常用 Pyxel API 速查](tutorial/11-appendix.md)
+10. [第十章：延伸挑戰](tutorial/10-challenges.md)
+11. [第十一章：發布與打包遊戲](tutorial/11-distribution.md)
+12. [附錄：常用 Pyxel API 速查](tutorial/12-appendix.md)
 
 ---
 

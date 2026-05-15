@@ -1,7 +1,7 @@
-[< 上一章：繪圖系統](09-drawing-system.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](11-appendix.md)
+[< 上一章：繪圖系統](09-drawing-system.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：發布與打包遊戲 >](11-distribution.md)
 ---
 
-## 延伸挑戰
+## 第十章：延伸挑戰
 
 以下挑戰可以讓你更深入了解遊戲各個系統：
 
@@ -24,4 +24,4 @@
 - [ ] 加入**音效**：用 `pyxel.sounds` 加入吃豆聲、死亡音效、能量豆音效
 
 ---
-[< 上一章：繪圖系統](09-drawing-system.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](11-appendix.md)
+[< 上一章：繪圖系統](09-drawing-system.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：發布與打包遊戲 >](11-distribution.md)

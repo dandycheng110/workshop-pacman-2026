@@ -96,7 +96,7 @@ GHOST_SPAWNS = [
 ]
 ```
 
-> **💡 Python 技巧：串列推導式 (List Comprehension)**
+> **💡 Python 技巧：List Comprehension**
 > 上面的程式碼用一行就完成了「建立空清單、迴圈遍歷、條件判斷、加入清單」四個動作。這是 Python 最受歡迎的特徵之一，讓程式碼更簡潔易讀。
 
 之後建立幽靈時，`Ghost(idx)` 直接取 `GHOST_SPAWNS[idx]` 作為初始位置，不需要在類別裡寫死座標。
