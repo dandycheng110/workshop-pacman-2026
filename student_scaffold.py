@@ -265,8 +265,15 @@ class App:
 
     def draw(self):
         pyxel.cls(COL_BG)
+        # UI：分數與生命
         pyxel.text(4, 4, f"SCORE:{self.score}", COL_TEXT)
         pyxel.text(WIDTH - 38, 4, f"LIVES:{self.lives}", COL_TEXT)
+
+        # 初始提示：讓學生第一次執行時看到畫面有東西
+        if self.state == "play" and self.score == 0:
+            pyxel.text(WIDTH // 2 - 32, HEIGHT // 2 - 15, "PAC-MAN START!", pyxel.frame_count % 16)
+            pyxel.text(WIDTH // 2 - 45, HEIGHT // 2, "Follow the tutorial!", COL_TEXT)
+            pyxel.text(WIDTH // 2 - 75, HEIGHT // 2 + 15, "NYCU GDC 20 Games Workshop | Pac-Man", 5)
 
         # 第二章練習：繪製牆壁與豆子
         pass  # ← 完成第二章練習後，把這行 pass 替換成你的實作
@@ -283,5 +290,4 @@ class App:
             pyxel.text(WIDTH // 2 - 22, HEIGHT // 2, "GAME OVER", 8)
 
 
-App()
 App()
