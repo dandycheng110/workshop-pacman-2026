@@ -65,20 +65,6 @@ def is_wall(tx, ty):
     return tile_at(tx, ty) == TILE_WALL
 
 
-def near_grid(v: float) -> bool:
-    return abs(v - round(v)) < 0.2
-
-
-def is_blocked(nx: float, ny: float, margin: float) -> bool:
-    corners = [
-        (nx + margin, ny + margin),
-        (nx + 1 - margin, ny + margin),
-        (nx + margin, ny + 1 - margin),
-        (nx + 1 - margin, ny + 1 - margin),
-    ]
-    return any(is_wall(int(px), int(py)) for px, py in corners)
-
-
 _DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 
 
@@ -142,14 +128,23 @@ class Pacman:
         self.reset()
 
     def reset(self):
-        self.tx = 9.0
-        self.ty = 14.0
+        self.tile_x = 9
+        self.tile_y = 14
         self.dx = 0
         self.dy = 0
         self.next_dx = 0
         self.next_dy = 0
+        self.progress = 0.0
         self.speed = 0.08
         self.anim = 0
+
+    @property
+    def tx(self):
+        return float(self.tile_x + self.dx * self.progress)
+
+    @property
+    def ty(self):
+        return float(self.tile_y + self.dy * self.progress)
 
     def update(self, dots):
         if pyxel.btn(pyxel.KEY_LEFT) or pyxel.btn(pyxel.KEY_A):
@@ -161,24 +156,21 @@ class Pacman:
         elif pyxel.btn(pyxel.KEY_DOWN) or pyxel.btn(pyxel.KEY_S):
             self.next_dx, self.next_dy = 0, 1
 
-        nx = self.tx + self.dx * self.speed
-        ny = self.ty + self.dy * self.speed
+        if self.dx == 0 and self.dy == 0:
+            if not is_wall(self.tile_x + self.next_dx, self.tile_y + self.next_dy):
+                self.dx, self.dy = self.next_dx, self.next_dy
 
-        if near_grid(self.tx) and near_grid(self.ty):
-            itx = int(round(self.tx))
-            ity = int(round(self.ty))
-            ntx = itx + self.next_dx
-            nty = ity + self.next_dy
-            if not is_wall(ntx, nty):
-                self.dx = self.next_dx
-                self.dy = self.next_dy
-
-        if not is_blocked(nx, ny, 0.15):
-            self.tx = nx % COLS
-            self.ty = ny % ROWS
-        else:
-            self.dx = 0
-            self.dy = 0
+        if self.dx != 0 or self.dy != 0:
+            self.progress += self.speed
+            if self.progress >= 1.0:
+                self.tile_x = (self.tile_x + self.dx) % COLS
+                self.tile_y = (self.tile_y + self.dy) % ROWS
+                self.progress -= 1.0
+                if not is_wall(self.tile_x + self.next_dx, self.tile_y + self.next_dy):
+                    self.dx, self.dy = self.next_dx, self.next_dy
+                elif is_wall(self.tile_x + self.dx, self.tile_y + self.dy):
+                    self.dx, self.dy = 0, 0
+                    self.progress = 0.0
 
         itx = int(self.tx + 0.5)
         ity = int(self.ty + 0.5)
@@ -217,12 +209,23 @@ class Ghost:
         self.reset()
 
     def reset(self):
-        self.tx = float(GHOST_SPAWNS[self.idx][0])
-        self.ty = float(GHOST_SPAWNS[self.idx][1])
-        self.dx, self.dy = 1, 0
+        self.tile_x, self.tile_y = GHOST_SPAWNS[self.idx]
+        for dx, dy in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
+            if not is_wall(self.tile_x + dx, self.tile_y + dy):
+                self.dx, self.dy = dx, dy
+                break
+        self.progress = 0.0
         self.speed = 0.06
         self.scared = False
         self.scared_timer = 0
+
+    @property
+    def tx(self):
+        return float(self.tile_x + self.dx * self.progress)
+
+    @property
+    def ty(self):
+        return float(self.tile_y + self.dy * self.progress)
 
     def update(self, pac_tx, pac_ty):
         if self.scared and self.scared_timer > 0:
@@ -230,19 +233,15 @@ class Ghost:
             if self.scared_timer == 0:
                 self.scared = False
 
-        if near_grid(self.tx) and near_grid(self.ty):
-            itx = int(round(self.tx))
-            ity = int(round(self.ty))
+        self.progress += self.speed
+        if self.progress >= 1.0:
+            self.tile_x = (self.tile_x + self.dx) % COLS
+            self.tile_y = (self.tile_y + self.dy) % ROWS
+            self.progress -= 1.0
             target = self.ai_fn(pac_tx, pac_ty)
-            best = pick_direction(itx, ity, self.dx, self.dy, *target, flee=self.scared)
+            best = pick_direction(self.tile_x, self.tile_y, self.dx, self.dy, *target, flee=self.scared)
             if best:
                 self.dx, self.dy = best
-
-        nx = self.tx + self.dx * self.speed
-        ny = self.ty + self.dy * self.speed
-        if not is_blocked(nx, ny, 0.12):
-            self.tx = nx % COLS
-            self.ty = ny % ROWS
 
     def draw(self):
         px = MAZE_X + int(self.tx * TS)

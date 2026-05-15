@@ -40,6 +40,11 @@ def pressing(key):
     return _btn
 
 
+# Frames needed for one full tile traversal at each speed
+PAC_TILE_FRAMES = int(1 / main.Pacman().speed) + 1   # ~13 at speed 0.08
+GHOST_TILE_FRAMES = int(1 / main.Ghost(0).speed) + 1  # ~17 at speed 0.06
+
+
 class TestMazeHelpers(unittest.TestCase):
     def test_wall_tile_is_wall(self):
         # First char of first row is '1'
@@ -63,16 +68,23 @@ class TestPacmanReset(unittest.TestCase):
         self.pac = main.Pacman()
 
     def test_starts_at_valid_tile(self):
-        tx = int(self.pac.tx)
-        ty = int(self.pac.ty)
-        self.assertFalse(main.is_wall(tx, ty), f"Pacman starts inside a wall at ({tx},{ty})")
+        self.assertFalse(
+            main.is_wall(self.pac.tile_x, self.pac.tile_y),
+            f"Pacman starts inside a wall at ({self.pac.tile_x},{self.pac.tile_y})"
+        )
 
     def test_starts_stationary(self):
         self.assertEqual(self.pac.dx, 0)
         self.assertEqual(self.pac.dy, 0)
+        self.assertEqual(self.pac.progress, 0.0)
 
     def test_speed_positive(self):
         self.assertGreater(self.pac.speed, 0)
+
+    def test_tx_ty_properties_match_tile(self):
+        # At rest, tx/ty equal the tile coords
+        self.assertAlmostEqual(self.pac.tx, float(self.pac.tile_x))
+        self.assertAlmostEqual(self.pac.ty, float(self.pac.tile_y))
 
 
 class TestPacmanMovement(unittest.TestCase):
@@ -90,62 +102,73 @@ class TestPacmanMovement(unittest.TestCase):
         self.assertAlmostEqual(self.pac.ty, ty)
 
     def test_turn_right_on_open_path(self):
-        # Row 4 ("1222222222222221") is a fully open corridor
-        self.pac.tx = 9.0
-        self.pac.ty = 4.0
+        # Row 4 ("1322222222222231") is a fully open corridor
+        self.pac.tile_x = 9
+        self.pac.tile_y = 4
+        self.pac.progress = 0.0
         pyxel_stub.btn = MagicMock(side_effect=pressing("KEY_RIGHT"))
         self._update()
         self.assertEqual(self.pac.dx, 1)
         self.assertEqual(self.pac.dy, 0)
 
     def test_turn_left_on_open_path(self):
-        self.pac.tx = 9.0
-        self.pac.ty = 4.0
+        self.pac.tile_x = 9
+        self.pac.tile_y = 4
+        self.pac.progress = 0.0
         pyxel_stub.btn = MagicMock(side_effect=pressing("KEY_LEFT"))
         self._update()
         self.assertEqual(self.pac.dx, -1)
 
     def test_cannot_turn_into_wall(self):
         # Col 0 is always a wall; pressing left from col 1 should be blocked
-        self.pac.tx = 1.0
-        self.pac.ty = 4.0
+        self.pac.tile_x = 1
+        self.pac.tile_y = 4
+        self.pac.progress = 0.0
         pyxel_stub.btn = MagicMock(side_effect=pressing("KEY_LEFT"))
         self._update()
         self.assertEqual(self.pac.dx, 0)
         self.assertEqual(self.pac.dy, 0)
 
     def test_moves_after_direction_set(self):
-        self.pac.tx = 9.0
-        self.pac.ty = 4.0
+        self.pac.tile_x = 9
+        self.pac.tile_y = 4
+        self.pac.progress = 0.0
         pyxel_stub.btn = MagicMock(side_effect=pressing("KEY_RIGHT"))
-        self._update()  # sets dx=1
+        self._update()  # sets dx=1, advances progress
         old_tx = self.pac.tx
         pyxel_stub.btn = MagicMock(side_effect=no_input)
         self._update()  # should continue moving right
         self.assertGreater(self.pac.tx, old_tx)
 
-    def test_blocked_by_wall_resets_direction(self):
-        # Force pac into a wall-adjacent position moving into the wall
-        self.pac.tx = 0.9
-        self.pac.ty = 21.0
-        self.pac.dx = -1  # moving left into wall at col 0
-        self._update()
+    def test_stops_at_dead_end(self):
+        # Row 1: "1222222112222221" — col 7 is a wall; col 6 is the last open tile
+        # Pac moves right from col 5 to col 6, then stops (forward is wall, queue is also right)
+        self.pac.tile_x = 5
+        self.pac.tile_y = 1
+        self.pac.dx = 1
+        self.pac.dy = 0
+        self.pac.next_dx = 1
+        self.pac.next_dy = 0
+        self.pac.progress = 0.0
+        for _ in range(PAC_TILE_FRAMES):
+            self._update()
         self.assertEqual(self.pac.dx, 0)
         self.assertEqual(self.pac.dy, 0)
 
     def test_wraps_horizontally(self):
-        # Open corridor on row 21; wrap from right edge
-        self.pac.tx = float(main.COLS - 1)
-        self.pac.ty = 21.0
+        # Tunnel row 6: pac at col 15 going right wraps to left side
+        self.pac.tile_x = main.COLS - 1
+        self.pac.tile_y = 6
         self.pac.dx = 1
-        # row 21 col COLS-1 is '1' (wall) so movement will be blocked;
-        # use row 21 col 17 (open) moving right toward col 18 (wall)
-        # Instead verify wrap on a truly open wrap row doesn't exist in this maze.
-        # Just ensure the modulo doesn't crash and tx stays in [0, COLS)
-        for _ in range(5):
+        self.pac.dy = 0
+        self.pac.next_dx = 1
+        self.pac.next_dy = 0
+        self.pac.progress = 0.0
+        for _ in range(PAC_TILE_FRAMES):
             self._update()
-        self.assertGreaterEqual(self.pac.tx, 0)
-        self.assertLess(self.pac.tx, main.COLS)
+        self.assertGreaterEqual(self.pac.tile_x, 0)
+        self.assertLess(self.pac.tile_x, main.COLS)
+        self.assertLess(self.pac.tx, float(main.COLS) / 2)
 
 
 class TestDotEating(unittest.TestCase):
@@ -154,25 +177,28 @@ class TestDotEating(unittest.TestCase):
 
     def test_eat_dot_removes_from_dict(self):
         pac = main.Pacman()
-        pac.tx = 5.0
-        pac.ty = 21.0
-        dots = {(5, 21): 'dot'}
+        pac.tile_x = 5
+        pac.tile_y = 1
+        pac.progress = 0.0
+        dots = {(5, 1): 'dot'}
         result = pac.update(dots)
         self.assertEqual(result, 'dot')
-        self.assertNotIn((5, 21), dots)
+        self.assertNotIn((5, 1), dots)
 
     def test_eat_power_pellet(self):
         pac = main.Pacman()
-        pac.tx = 5.0
-        pac.ty = 21.0
-        dots = {(5, 21): 'power'}
+        pac.tile_x = 5
+        pac.tile_y = 1
+        pac.progress = 0.0
+        dots = {(5, 1): 'power'}
         result = pac.update(dots)
         self.assertEqual(result, 'power')
 
     def test_no_dot_returns_none(self):
         pac = main.Pacman()
-        pac.tx = 5.0
-        pac.ty = 21.0
+        pac.tile_x = 5
+        pac.tile_y = 1
+        pac.progress = 0.0
         result = pac.update({})
         self.assertIsNone(result)
 
@@ -186,8 +212,23 @@ class TestGhostReset(unittest.TestCase):
     def test_ghost_starts_at_valid_position(self):
         for i in range(4):
             g = main.Ghost(i)
-            tx, ty = int(g.tx), int(g.ty)
-            self.assertFalse(main.is_wall(tx, ty), f"Ghost {i} starts in wall at ({tx},{ty})")
+            self.assertFalse(
+                main.is_wall(g.tile_x, g.tile_y),
+                f"Ghost {i} starts in wall at ({g.tile_x},{g.tile_y})"
+            )
+
+    def test_ghost_starts_with_valid_direction(self):
+        for i in range(4):
+            g = main.Ghost(i)
+            self.assertFalse(
+                main.is_wall(g.tile_x + g.dx, g.tile_y + g.dy),
+                f"Ghost {i} initial direction leads into wall"
+            )
+
+    def test_ghost_starts_with_zero_progress(self):
+        for i in range(4):
+            g = main.Ghost(i)
+            self.assertEqual(g.progress, 0.0)
 
 
 class TestGhostScared(unittest.TestCase):
@@ -195,10 +236,13 @@ class TestGhostScared(unittest.TestCase):
         g = main.Ghost(0)
         g.scared = True
         g.scared_timer = 5
-        g.tx = 9.0
-        g.ty = 13.0
+        # Use a valid open tile so movement doesn't error
+        g.tile_x = 9
+        g.tile_y = 4
+        g.dx, g.dy = 1, 0
+        g.progress = 0.0
         for _ in range(5):
-            g.update(9.0, 21.0)
+            g.update(9.0, 4.0)
         self.assertFalse(g.scared)
         self.assertEqual(g.scared_timer, 0)
 
@@ -275,47 +319,57 @@ class TestPickDirection(unittest.TestCase):
 
 
 class TestGhostAI(unittest.TestCase):
-    # Test position (7, 4) in row 4 ("1222222222222221"):
-    # walls above (3,7) and below (5,7), so only left/right are valid moves.
-    # Pac-Man placed at (12, 4) — clearly to the right.
+    # Test position (7, 4) in row 4 ("1322222222222231"):
+    # four-way open intersection. Pac-Man placed at (12, 4) — to the right.
 
-    def _ghost_at(self, tx, ty):
+    def _ghost_arriving_at(self, tx, ty, dx=1, dy=0):
+        """Ghost positioned one tile before (tx,ty), just about to arrive."""
         g = main.Ghost(0)
-        g.tx, g.ty = float(tx), float(ty)
-        g.dx, g.dy = 0, 0  # neutral start: no direction excluded by reverse check
+        g.tile_x = tx - dx
+        g.tile_y = ty - dy
+        g.dx, g.dy = dx, dy
+        g.progress = 1.0 - g.speed + 0.001  # one update away from tile arrival
         return g
 
     def test_default_ai_fn_is_chase(self):
-        # Ghost.ai_fn should return Pac-Man's position as the target
-        g = self._ghost_at(7, 4)
+        g = self._ghost_arriving_at(7, 4)
         self.assertEqual(g.ai_fn(5.0, 3.0), (5.0, 3.0))
 
     def test_chases_pacman_when_not_scared(self):
-        g = self._ghost_at(7, 4)
+        # Ghost arrives at (7,4) from left (dx=1); pick_direction excludes reverse.
+        # Best non-reverse direction toward (12,4) is right (1,0).
+        g = self._ghost_arriving_at(7, 4, dx=1, dy=0)
         g.update(12.0, 4.0)
-        self.assertEqual(g.dx, 1)   # right = toward Pac-Man
+        self.assertEqual(g.dx, 1)
         self.assertEqual(g.dy, 0)
 
     def test_flees_pacman_when_scared(self):
-        g = self._ghost_at(7, 4)
+        # Ghost arrives at (7,4) from above (dy=1); pick_direction excludes reverse (up).
+        # Farthest from (12,4): left (-1,0) at dist²=36 beats right (16) and down (26).
+        g = self._ghost_arriving_at(7, 4, dx=0, dy=1)
         g.scared = True
         g.scared_timer = 150
         g.update(12.0, 4.0)
-        self.assertEqual(g.dx, -1)  # left = away from Pac-Man
+        self.assertEqual(g.dx, -1)
         self.assertEqual(g.dy, 0)
 
     def test_custom_ai_fn_is_used(self):
-        # A ghost with a fixed target at (2, 4) should move left (away from right)
-        g = self._ghost_at(7, 4)
+        # Ghost arrives at (7,4) from above; custom target at (2,4).
+        # Closest non-reverse direction toward (2,4): left (-1,0) at dist²=25.
+        g = self._ghost_arriving_at(7, 4, dx=0, dy=1)
         g.ai_fn = lambda pac_tx, pac_ty: (2.0, 4.0)
         g.update(12.0, 4.0)
-        self.assertEqual(g.dx, -1)  # left = toward fixed target at col 2
+        self.assertEqual(g.dx, -1)
 
 
 class TestPinkyAI(unittest.TestCase):
     def _pac(self, tx, ty, dx, dy):
         p = main.Pacman()
-        p.tx, p.ty, p.dx, p.dy = float(tx), float(ty), dx, dy
+        p.tile_x = tx
+        p.tile_y = ty
+        p.dx = dx
+        p.dy = dy
+        p.progress = 0.0
         return p
 
     def test_targets_4_tiles_ahead_moving_right(self):
@@ -344,9 +398,15 @@ class TestPinkyAI(unittest.TestCase):
 class TestInkyAI(unittest.TestCase):
     def _setup(self, pac_tx, pac_ty, pac_dx, pac_dy, blinky_tx, blinky_ty):
         pac = main.Pacman()
-        pac.tx, pac.ty, pac.dx, pac.dy = float(pac_tx), float(pac_ty), pac_dx, pac_dy
+        pac.tile_x = pac_tx
+        pac.tile_y = pac_ty
+        pac.dx = pac_dx
+        pac.dy = pac_dy
+        pac.progress = 0.0
         blinky = main.Ghost(0)
-        blinky.tx, blinky.ty = float(blinky_tx), float(blinky_ty)
+        blinky.tile_x = blinky_tx
+        blinky.tile_y = blinky_ty
+        blinky.progress = 0.0
         return main.make_inky_ai(pac, blinky)
 
     def test_doubles_vector_from_blinky_to_pivot(self):
@@ -363,11 +423,13 @@ class TestInkyAI(unittest.TestCase):
 
     def test_reads_live_blinky_position(self):
         pac = main.Pacman()
-        pac.tx, pac.ty, pac.dx, pac.dy = 5.0, 4.0, 1, 0
+        pac.tile_x, pac.tile_y, pac.dx, pac.dy = 5, 4, 1, 0
+        pac.progress = 0.0
         blinky = main.Ghost(0)
-        blinky.tx, blinky.ty = 3.0, 4.0
+        blinky.tile_x, blinky.tile_y = 3, 4
+        blinky.progress = 0.0
         ai = main.make_inky_ai(pac, blinky)
-        blinky.tx = 1.0  # blinky moves; pivot still (7,4), target = 2*7-1=13
+        blinky.tile_x = 1  # blinky moves; pivot still (7,4), target = 2*7-1=13
         self.assertEqual(ai(5.0, 4.0), (13.0, 4.0))
 
 
@@ -376,7 +438,9 @@ class TestClydeAI(unittest.TestCase):
 
     def _clyde_at(self, tx, ty):
         g = main.Ghost(3)
-        g.tx, g.ty = float(tx), float(ty)
+        g.tile_x = tx
+        g.tile_y = ty
+        g.progress = 0.0
         return g
 
     def test_chases_when_far(self):
@@ -400,43 +464,8 @@ class TestClydeAI(unittest.TestCase):
     def test_reads_live_clyde_position(self):
         clyde = self._clyde_at(9, 4)   # starts close → corner
         ai = main.make_clyde_ai(clyde, *self.CORNER)
-        clyde.tx = 1.0                  # moves far → should now chase
+        clyde.tile_x = 1               # moves far → should now chase
         self.assertEqual(ai(10.0, 4.0), (10.0, 4.0))
-
-
-class TestNearGrid(unittest.TestCase):
-    def test_exact_integer_is_near(self):
-        self.assertTrue(main.near_grid(3.0))
-
-    def test_within_threshold_is_near(self):
-        self.assertTrue(main.near_grid(3.19))
-
-    def test_just_outside_threshold_is_not_near(self):
-        self.assertFalse(main.near_grid(3.21))
-
-    def test_midpoint_is_not_near(self):
-        self.assertFalse(main.near_grid(3.5))
-
-
-class TestIsBlocked(unittest.TestCase):
-    # MAZE[1] = "1222222112222221" — wall at col 7
-    def test_open_position_not_blocked(self):
-        self.assertFalse(main.is_blocked(1.0, 1.0, 0.15))
-
-    def test_wall_position_blocked(self):
-        self.assertTrue(main.is_blocked(0.0, 0.0, 0.15))
-
-    def test_entity_overlapping_wall_tile_is_blocked(self):
-        # entity at (6.9, 1.0) physically extends into col 7 (wall) — always blocked
-        self.assertTrue(main.is_blocked(6.9, 1.0, 0.15))
-
-    def test_large_margin_inset_avoids_corner_wall(self):
-        # entity at (1.0, 0.85): inset corners (margin 0.15) land on row 1 (open)
-        self.assertFalse(main.is_blocked(1.0, 0.85, 0.15))
-
-    def test_small_margin_full_box_hits_corner_wall(self):
-        # same position, margin 0.01 → top corners reach row 0 (all walls)
-        self.assertTrue(main.is_blocked(1.0, 0.85, 0.01))
 
 
 class TestTunnelMazeStructure(unittest.TestCase):
@@ -471,40 +500,20 @@ class TestTunnelTraversal(unittest.TestCase):
     def _pac(self, tx, ty, dx, dy):
         pyxel_stub.btn = MagicMock(side_effect=no_input)
         pac = main.Pacman()
-        pac.tx = float(tx)
-        pac.ty = float(ty)
+        pac.tile_x = int(tx)
+        pac.tile_y = int(ty)
         pac.dx = dx
         pac.dy = dy
-        pac.next_dx = dx   # persist direction across frames (no key held)
+        pac.next_dx = dx
         pac.next_dy = dy
+        pac.progress = 0.0
         return pac
-
-    # --- is_blocked ---
-
-    def test_is_blocked_does_not_block_right_tunnel_exit(self):
-        # nx=COLS-1+0.16: right bounding-box corner lands at int(COLS+0.01)=COLS
-        # which is out of bounds and currently treated as a wall — this is the bug.
-        ty = float(self.TUNNEL_ROW)
-        nx = main.COLS - 1 + 0.16
-        self.assertFalse(
-            main.is_blocked(nx, ty, 0.15),
-            "is_blocked should not block movement past the right tunnel edge"
-        )
-
-    def test_is_blocked_does_not_block_left_tunnel_exit(self):
-        # nx=-0.08: left corners land at int(0.07)=0 which is in-bounds and open.
-        # This direction already works; the test guards against regression.
-        ty = float(self.TUNNEL_ROW)
-        self.assertFalse(
-            main.is_blocked(-0.08, ty, 0.15),
-            "is_blocked should not block movement past the left tunnel edge"
-        )
 
     # --- pick_direction ---
 
     def test_pick_direction_allows_right_exit_at_right_tunnel_tile(self):
         # Ghost at the rightmost tunnel tile moving right: ntx=COLS is OOB,
-        # so is_wall returns True and the direction is wrongly excluded.
+        # tile_at handles it via tunnel wrapping → not a wall.
         result = main.pick_direction(
             main.COLS - 1, self.TUNNEL_ROW,
             dx=1, dy=0,
@@ -526,10 +535,9 @@ class TestTunnelTraversal(unittest.TestCase):
     # --- end-to-end traversal ---
 
     def test_pacman_traverses_right_tunnel(self):
-        # Pac-Man at the rightmost tunnel tile moving right should wrap to the
-        # left side. With the bug, it gets stuck at tx ≈ COLS - 0.9 (dx → 0).
+        # Pac-Man at the rightmost tunnel tile moving right wraps to the left side.
         pac = self._pac(main.COLS - 1, self.TUNNEL_ROW, dx=1, dy=0)
-        for _ in range(50):
+        for _ in range(PAC_TILE_FRAMES + 5):
             pac.update({})
         self.assertLess(
             pac.tx, float(main.COLS) / 2,
@@ -537,11 +545,9 @@ class TestTunnelTraversal(unittest.TestCase):
         )
 
     def test_pacman_traverses_left_tunnel(self):
-        # Pac-Man at the leftmost tunnel tile moving left should wrap to the
-        # right side and continue moving. With the bug, it wraps but immediately
-        # gets stuck because the right bounding-box corner goes OOB.
+        # Pac-Man at the leftmost tunnel tile moving left wraps to the right side.
         pac = self._pac(0, self.TUNNEL_ROW, dx=-1, dy=0)
-        for _ in range(50):
+        for _ in range(PAC_TILE_FRAMES + 5):
             pac.update({})
         self.assertNotEqual(
             pac.dx, 0,
@@ -550,12 +556,93 @@ class TestTunnelTraversal(unittest.TestCase):
 
     def test_pacman_tunnel_row_9_traverses_right(self):
         pac = self._pac(main.COLS - 1, 9, dx=1, dy=0)
-        for _ in range(50):
+        for _ in range(PAC_TILE_FRAMES + 5):
             pac.update({})
         self.assertLess(
             pac.tx, float(main.COLS) / 2,
             f"Row-9 tunnel: Pac-Man should wrap to left side (tx={pac.tx:.2f})"
         )
+
+
+class TestTileProgressMovement(unittest.TestCase):
+    """Verify key properties of the tile-progress movement model."""
+
+    def setUp(self):
+        pyxel_stub.btn = MagicMock(side_effect=no_input)
+
+    # --- Ghost ---
+
+    def test_ghost_direction_only_changes_at_tile_boundary(self):
+        # Ghost moving right through row 4 toward pac at (12,4).
+        # Direction must not change mid-tile — only after progress overflows.
+        g = main.Ghost(0)
+        g.tile_x = 6
+        g.tile_y = 4
+        g.dx, g.dy = 1, 0
+        g.progress = 0.0
+        initial_dx = g.dx
+        # Fewer frames than a full tile — direction should be unchanged
+        for _ in range(GHOST_TILE_FRAMES - 2):
+            g.update(12.0, 4.0)
+        self.assertEqual(g.dx, initial_dx, "Direction changed before tile boundary")
+        # Complete the tile traversal — pick_direction fires at arrival
+        for _ in range(4):
+            g.update(12.0, 4.0)
+        self.assertEqual(g.dx, 1)  # continues right toward pac at col 12
+
+    def test_ghost_no_wall_clip(self):
+        # In the tile-progress model, turns always happen at exact tile boundaries.
+        # The ghost's body can never clip into adjacent walls.
+        g = main.Ghost(0)  # starts at valid spawn with a valid direction
+        for _ in range(200):
+            g.update(6.0, 14.0)
+            self.assertFalse(
+                main.is_wall(g.tile_x, g.tile_y),
+                f"Ghost occupies wall tile ({g.tile_x},{g.tile_y})"
+            )
+
+    # --- Pacman ---
+
+    def test_pacman_queued_direction_applied_at_tile_boundary(self):
+        # Row 4 col 4 → down to col (4,5): MAZE[5][4]='2', valid.
+        # Pac moving right from (3,4); queued direction: down.
+        pac = main.Pacman()
+        pac.tile_x = 3
+        pac.tile_y = 4
+        pac.dx, pac.dy = 1, 0
+        pac.next_dx, pac.next_dy = 0, 1
+        pac.progress = 0.0
+        for _ in range(PAC_TILE_FRAMES):
+            pac.update({})
+        self.assertEqual(pac.dy, 1, "Pac-Man should have turned down at tile boundary")
+        self.assertEqual(pac.dx, 0)
+
+    def test_pacman_stops_when_wall_ahead_and_no_queue(self):
+        # Row 1 col 5→6: col 7 is wall. Both current and queued direction right → stop.
+        pac = main.Pacman()
+        pac.tile_x = 5
+        pac.tile_y = 1
+        pac.dx, pac.dy = 1, 0
+        pac.next_dx, pac.next_dy = 1, 0
+        pac.progress = 0.0
+        for _ in range(PAC_TILE_FRAMES):
+            pac.update({})
+        self.assertEqual(pac.dx, 0)
+        self.assertEqual(pac.dy, 0)
+
+    def test_pacman_continues_if_queue_blocked_but_forward_clear(self):
+        # Row 4 col 4→5: queued up leads to (5,3) which is a wall.
+        # Forward (right) is clear at (6,4) → continue right.
+        pac = main.Pacman()
+        pac.tile_x = 4
+        pac.tile_y = 4
+        pac.dx, pac.dy = 1, 0
+        pac.next_dx, pac.next_dy = 0, -1  # up: MAZE[3][5]='1', blocked
+        pac.progress = 0.0
+        for _ in range(PAC_TILE_FRAMES):
+            pac.update({})
+        self.assertEqual(pac.dx, 1, "Pac-Man should continue right when queued up is blocked")
+        self.assertEqual(pac.dy, 0)
 
 
 if __name__ == "__main__":
