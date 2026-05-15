@@ -1,4 +1,4 @@
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](12-appendix.md)
+[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)
 ---
 
 ## 第十一章：發布與打包遊戲
@@ -63,4 +63,4 @@ pyxel app2exe main.pyxapp
 恭喜你！你已經完成了從開發到發布的所有步驟。快去分享你的 Pac-Man 吧！
 
 ---
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](12-appendix.md)
+[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)
