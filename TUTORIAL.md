@@ -7,16 +7,15 @@
 1. [第一章：事前準備與專案架構](tutorial/01-getting-started.md)
 2. [第二章：顏色、格子與地圖](tutorial/02-grid-and-maze.md)
 3. [第三章：移動與碰撞偵測](tutorial/03-movement-and-collision.md)
-4. [第四章：小精靈——輸入處理與動畫](tutorial/04-pacman.md)
+4. [第四章：小精靈——吃豆子與動畫](tutorial/04-pacman.md)
 5. [第五章：方向選擇演算法](tutorial/05-direction-algorithm.md)
 6. [第六章：四隻幽靈的 AI](tutorial/06-ghost-ai.md)
 7. [第七章：幽靈繪製](tutorial/07-ghost-rendering.md)
 8. [第八章：遊戲狀態機](tutorial/08-state-machine.md)
-9. [第九章：繪圖系統](tutorial/09-drawing-system.md)
-10. [第十章：延伸挑戰](tutorial/10-challenges.md)
-11. [第十一章：發布與打包遊戲](tutorial/11-distribution.md)
-12. [附錄：常用 Pyxel API 速查](tutorial/99-appendix.md)
+9. [第九章：延伸挑戰](tutorial/09-challenges.md)
+10. [第十章：發布與打包遊戲](tutorial/10-distribution.md)
+11. [附錄：常用 Pyxel API 速查](tutorial/99-appendix.md)
 
 ---
 
-希望這個系列教程能幫助你掌握 Pyxel 遊戲開發的核心概念！
+希望這個系列教學能幫助你掌握 Pyxel 遊戲開發的核心概念！

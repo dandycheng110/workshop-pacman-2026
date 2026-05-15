@@ -1,7 +1,7 @@
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)
+[< 上一章：延伸挑戰](09-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)
 ---
 
-## 第十一章：發布與打包遊戲
+## 第十章：發布與打包遊戲
 
 當你完成遊戲後，一定想分享給朋友玩。Pyxel 提供了非常方便的工具，可以讓你把程式碼打包成單一檔案，甚至轉換成可以在瀏覽器上執行的網頁版。
 
@@ -24,16 +24,19 @@ pyxel package . main.py
 
 ### 2. 轉換成網頁版 (HTML/WASM) —— 最推薦！
 
-這是最方便分享的方式。你可以把遊戲變成一個 HTML 檔案，傳給朋友後，他們直接用瀏覽器就能玩，甚至在手機上也能跑。
+這是最方便分享的方式。你可以把遊戲變成一個網頁，傳給朋友後，他們直接用瀏覽器就能玩，甚至在手機上也能跑。
 
-**執行命令：**
+**方法 A：產生獨立 HTML 檔案**
+執行命令：
 ```bash
 pyxel app2html main.pyxapp
 ```
 這會產生一個 `main.html`。
+*   **如何執行：** 直接用瀏覽器打開即可。
+*   **分享平台：** 你可以把這個 HTML 上傳到 [itch.io](https://itch.io/) 讓大家在線上玩。
 
-*   **如何執行：** 直接用 Chrome 或 Safari 瀏覽器打開即可。
-*   **分享平台：** 你可以把這個 HTML 上傳到 [itch.io](https://itch.io/)，讓全世界的人都能在線上玩你的作品。
+**方法 B：使用 Web Launcher (URL Builder)**
+如果你將 `.pyxapp` 檔案上傳到 GitHub 或其他空間，可以使用 [Pyxel Web Launcher URL Builder](https://kitao.github.io/pyxel/web/launcher/url-builder.html) 產生一個專屬連結。朋友只要點開連結就能直接在瀏覽器遊玩，連 HTML 檔案都不用傳！
 
 ---
 
@@ -63,4 +66,4 @@ pyxel app2exe main.pyxapp
 恭喜你！你已經完成了從開發到發布的所有步驟。快去分享你的 Pac-Man 吧！
 
 ---
-[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)
+[< 上一章：延伸挑戰](09-challenges.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：附錄：常用 Pyxel API 速查 >](99-appendix.md)

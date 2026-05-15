@@ -5,9 +5,9 @@ HEIGHT = 272
 TS = 16  # 每格 16×16 像素（Tile Size）
 
 # Pyxel 使用 0–15 的整數索引固定調色盤（參考 tutorial/02-grid-and-maze.md）
-COL_BG = 0    # 黑色（背景）
+COL_BG = 0  # 黑色（背景）
 COL_WALL = 5  # 深藍色（牆壁）
-COL_DOT = 7   # 白色（豆子）
+COL_DOT = 7  # 白色（豆子）
 COL_PAC = 10  # 黃色（小精靈）
 COL_GHOST = [8, 14, 12, 15]  # 四隻幽靈：Blinky 粉、Pinky 橘、Inky 藍、Clyde 米
 COL_SCARED = 6  # 藍色（受驚狀態）
@@ -16,8 +16,8 @@ COL_TEXT = 7
 # 地圖字元代號（每個字元代表一種格子，詳見 tutorial/02-grid-and-maze.md）
 TILE_EMPTY = "0"
 TILE_WALL = "1"
-TILE_DOT = "2"       # 普通豆子 +10 分
-TILE_POWER = "3"     # 能量豆 +50 分，讓幽靈進入受驚狀態
+TILE_DOT = "2"  # 普通豆子 +10 分
+TILE_POWER = "3"  # 能量豆 +50 分，讓幽靈進入受驚狀態
 TILE_GHOST_SPAWN = "4"
 
 MAZE = [
@@ -42,7 +42,7 @@ MAZE = [
 ROWS = len(MAZE)
 COLS = len(MAZE[0])
 MAZE_X = (WIDTH - COLS * TS) // 2  # 地圖左上角在螢幕的 x 像素（置中）
-MAZE_Y = 16                          # 地圖左上角在螢幕的 y 像素
+MAZE_Y = 16  # 地圖左上角在螢幕的 y 像素
 
 # 小精靈嘴巴動畫：sprite bank 第 0 列，x=0 全開、x=16 半開、x=32 閉合
 # 12 幀循環：開 → 半 → 閉 → 半 → 開（見 tutorial/04-pacman.md）
@@ -110,6 +110,7 @@ def pick_direction(
 
 # 四隻幽靈 AI（詳見 tutorial/06-ghost-ai.md）
 # 每個 AI 函式接收小精靈的格子座標，回傳「目標格子座標」給 pick_direction 使用。
+
 
 def chase_ai(pac_tx: float, pac_ty: float) -> tuple[float, float]:
     # Blinky（紅）：直接以小精靈當前位置為目標
@@ -266,7 +267,15 @@ class Ghost:
             self.progress -= 1.0
             # 抵達格子時詢問 AI 決定下一步方向
             target = self.ai_fn(pac_tx, pac_ty)
-            best = pick_direction(self.tile_x, self.tile_y, self.dx, self.dy, *target, flee=self.scared, allow_tunnel=False)
+            best = pick_direction(
+                self.tile_x,
+                self.tile_y,
+                self.dx,
+                self.dy,
+                *target,
+                flee=self.scared,
+                allow_tunnel=False,
+            )
             if best:
                 self.dx, self.dy = best
 
