@@ -1,9 +1,8 @@
 import pyxel
-import math
 
-WIDTH = 160
-HEIGHT = 180
-TS = 8
+WIDTH = 272
+HEIGHT = 272
+TS = 16
 
 COL_BG = 0
 COL_WALL = 5
@@ -42,6 +41,11 @@ ROWS = len(MAZE)
 COLS = len(MAZE[0])
 MAZE_X = (WIDTH - COLS * TS) // 2
 MAZE_Y = 16
+
+# Pac-Man animation frames (16×16 sprites at y=0): 0=open, 1=half-open, 2=closed
+_PAC_FRAMES = [0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 1, 1]
+# Sprite bank y-coord for each ghost index (Blinky, Pinky, Inky, Clyde)
+_GHOST_SPRITE_Y = [16, 64, 32, 48]
 
 GHOST_SPAWNS = [
     (tx, ty)
@@ -183,26 +187,12 @@ class Pacman:
         return None
 
     def draw(self):
-        self.anim = (self.anim + 1) % 20
-        mouth = (self.anim % 10) / 10.0 * 0.45
+        self.anim = (self.anim + 1) % 12
+        sx = _PAC_FRAMES[self.anim] * 16
         px = MAZE_X + int(self.tx * TS)
         py = MAZE_Y + int(self.ty * TS)
-        cx = px + 4
-        cy = py + 4
-        r = 3
-        angle_offset = (
-            math.atan2(self.dy, self.dx) if (self.dx != 0 or self.dy != 0) else 0
-        )
-        for dy in range(-r, r + 1):
-            for dx in range(-r, r + 1):
-                if dx * dx + dy * dy <= r * r:
-                    ang = math.atan2(dy, dx) - angle_offset
-                    while ang > math.pi:
-                        ang -= 2 * math.pi
-                    while ang < -math.pi:
-                        ang += 2 * math.pi
-                    if abs(ang) > mouth * math.pi:
-                        pyxel.pset(cx + dx, cy + dy, COL_PAC)
+        w = -16 if self.dx > 0 else 16
+        pyxel.blt(px, py, 0, sx, 0, w, 16, 0)
 
 
 class Ghost:
@@ -255,22 +245,17 @@ class Ghost:
     def draw(self):
         px = MAZE_X + int(self.tx * TS)
         py = MAZE_Y + int(self.ty * TS)
-        col = COL_SCARED if self.scared else COL_GHOST[self.idx]
-        for dy in range(1, 7):
-            for dx in range(1, 7):
-                if dy <= 3:
-                    if (dx - 3.5) ** 2 + (dy - 3.5) ** 2 <= 3.5**2:
-                        pyxel.pset(px + dx, py + dy, col)
-                else:
-                    pyxel.pset(px + dx, py + dy, col)
-        if not self.scared:
-            pyxel.pset(px + 2, py + 3, 7)
-            pyxel.pset(px + 5, py + 3, 7)
+        if self.scared:
+            pyxel.blt(px, py, 0, 0, 80, 16, 16, 0)
+        else:
+            sx = ((pyxel.frame_count // 4) % 2) * 16
+            pyxel.blt(px, py, 0, sx, _GHOST_SPRITE_Y[self.idx], 16, 16, 0)
 
 
 class App:
     def __init__(self):
         pyxel.init(WIDTH, HEIGHT, title="Pac-Man", fps=30)
+        pyxel.load("main.pyxres")
         self.reset_game()
         pyxel.run(self.update, self.draw)
 
@@ -352,7 +337,7 @@ class App:
         pyxel.cls(COL_BG)
 
         pyxel.text(4, 4, f"SCORE:{self.score}", COL_TEXT)
-        pyxel.text(110, 4, f"LIVES:{self.lives}", COL_TEXT)
+        pyxel.text(WIDTH - 38, 4, f"LIVES:{self.lives}", COL_TEXT)
 
         for ty in range(ROWS):
             for tx in range(COLS):
@@ -362,13 +347,13 @@ class App:
                     pyxel.rect(px, py, TS, TS, COL_WALL)
 
         for (tx, ty), kind in self.dots.items():
-            px = MAZE_X + tx * TS + 3
-            py = MAZE_Y + ty * TS + 3
+            px = MAZE_X + tx * TS + TS // 2
+            py = MAZE_Y + ty * TS + TS // 2
             if kind == "dot":
-                pyxel.pset(px, py, COL_DOT)
+                pyxel.rect(px - 1, py - 1, 3, 3, COL_DOT)
             else:
                 if (pyxel.frame_count // 8) % 2 == 0:
-                    pyxel.circ(px, py, 2, COL_PAC)
+                    pyxel.circ(px, py, 4, COL_PAC)
 
         for g in self.ghosts:
             g.draw()
@@ -377,9 +362,9 @@ class App:
             self.pac.draw()
 
         if self.state == "win":
-            pyxel.text(55, 88, "YOU WIN!", COL_PAC)
+            pyxel.text(WIDTH // 2 - 20, HEIGHT // 2, "YOU WIN!", COL_PAC)
         elif self.state == "gameover":
-            pyxel.text(48, 88, "GAME OVER", 8)
+            pyxel.text(WIDTH // 2 - 22, HEIGHT // 2, "GAME OVER", 8)
 
 
 App()
