@@ -144,4 +144,69 @@ self.ghosts[3].ai_fn = make_clyde_ai(self.ghosts[3], 1.0, float(ROWS - 2))  # Cl
 ```
 
 ---
+
+## 🖊️ 練習：PRIMM 觀察
+
+### [P] 預測
+
+閱讀本章的 `Ghost.update()` 程式碼，回答以下問題，**先不要執行遊戲**：
+
+1. `scared_timer` 從 150 開始，每幀減 1，遊戲以 30 FPS 執行——受驚狀態持續幾秒？
+2. 若把 `g.scared_timer = 150` 改成 `300`，玩家體驗有何不同？
+
+### [R] 執行
+
+```bash
+uv run python student_scaffold.py
+```
+
+吃下地圖四個角的閃爍圓圈（能量豆），觀察幽靈變藍的持續時間，與你的預測比對。
+
+### [I] 研究
+
+對照你在**第五章**寫好的 `Ghost.update()` 實作，回答以下問題：
+
+1. `scared_timer -= 1` 在哪個 `if` 條件的內部？如果把這個條件拿掉，會發生什麼事？
+2. 你在步驟 5 傳入了 `flee=self.scared`。當 `self.scared` 為 `True` 時，`pick_direction` 裡的 `score` 公式會變成什麼？為什麼這樣能讓幽靈「逃離」而非「追逐」？
+3. `eat_dot()` 回傳字串 `"power"` 而不是直接修改幽靈狀態——從類別設計的角度，這樣做的好處是什麼？
+
+---
+
+## 🖊️ 練習二：實作四隻幽靈的 AI
+
+打開 `student_scaffold.py`，找到四個 AI 函式中的 `# ← 完成第六章練習後...` 行，依照下方框架替換成你的實作：
+
+```python
+def chase_ai(pac_tx, pac_ty):
+    # Blinky：目標就是小精靈目前的位置
+    return ___, ___
+
+
+def make_pinky_ai(pac):
+    def ai(pac_tx, pac_ty):
+        # Pinky：目標是小精靈前方 4 格
+        return pac_tx + ___ * pac.dx, pac_ty + ___ * pac.dy
+    return ai
+
+
+def make_inky_ai(pac, blinky):
+    def ai(pac_tx, pac_ty):
+        pivot_x = pac_tx + ___ * pac.dx   # 中間點：小精靈前方 2 格
+        pivot_y = pac_ty + ___ * pac.dy
+        return 2 * pivot_x - blinky.___, 2 * pivot_y - blinky.___  # 對稱反射
+    return ai
+
+
+def make_clyde_ai(clyde, corner_x, corner_y):
+    def ai(pac_tx, pac_ty):
+        dist2 = (clyde.___ - pac_tx) ** 2 + (clyde.___ - pac_ty) ** 2
+        if dist2 > ___:   # 超過 8 格距離
+            return pac_tx, pac_ty
+        return ___, ___   # 逃往角落
+    return ai
+```
+
+完成後執行遊戲，觀察各幽靈的追逐行為是否符合本章說明。
+
+---
 [< 上一章：方向選擇演算法](05-direction-algorithm.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：幽靈繪製 >](07-ghost-rendering.md)

@@ -62,5 +62,39 @@ pyxel.run(self.update, self.draw)
 
 `fps=30` 代表每秒執行 30 次 update 和 draw，這也是本專案中所有「計時器」和「速度」的時間基準。
 
+## Pyxel 編輯器
+
+Pyxel 內建一個像素圖編輯器，讓你直接在 Python 環境中繪製 Sprite 和音效素材。啟動方式：
+
+```bash
+uv run pyxel edit main.pyxres
+```
+
+編輯器主要包含三個工具：
+
+| 工具 | 說明 |
+|------|------|
+| Image Bank | 繪製 Sprite（小精靈、幽靈的 16×16 像素圖） |
+| Tilemap | 用 Sprite 組合成地圖背景 |
+| Sound / Music | 設計音效與背景音樂 |
+
+除了本地端的編輯器，Pyxel 也提供了 **[Web 版編輯器 (Code Maker)](https://kitao.github.io/pyxel/web/code-maker/)**，讓你不需要安裝 Python 就能直接在瀏覽器裡寫程式與繪圖。
+
+詳細操作說明見官方手冊：[Pyxel Editor Manual](https://kitao.github.io/pyxel/web/editor-manual/)
+
+> **工作坊說明**：課程進行到這裡時，請依照講師說明在 Pyxel 編輯器中繪製 Sprite 並儲存為 `main.pyxres`。完成後進行下方的練習。
+
+---
+
+## 🖊️ 練習：載入 Sprite 資源
+
+在 Pyxel 編輯器中繪製好 Sprite 並儲存後，打開 `student_scaffold.py`，找到 `App.__init__` 裡的提示，加入一行：
+
+```python
+pyxel.load("main.pyxres")
+```
+
+執行遊戲，確認小精靈以 Sprite 形式出現並在畫面中移動。
+
 ---
 [🏠 回目錄](../TUTORIAL.md) | [下一章：顏色、格子與地圖 >](02-grid-and-maze.md)

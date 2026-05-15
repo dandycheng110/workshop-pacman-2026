@@ -1,4 +1,4 @@
-[< 上一章：發布與打包遊戲](11-distribution.md) | [🏠 回目錄](../TUTORIAL.md)
+[< 上一章：發布與打包遊戲](10-distribution.md) | [🏠 回目錄](../TUTORIAL.md)
 ---
 
 ## 附錄：常用 Pyxel API 速查
@@ -17,5 +17,8 @@
 | `pyxel.frame_count` | 累積幀數 |
 | `pyxel.quit()` | 結束遊戲 |
 
+### 更多參考資料
+- [Pyxel 官方 API 參考手冊 (Web 版)](https://kitao.github.io/pyxel/web/api-reference/)
+
 ---
-[< 上一章：發布與打包遊戲](11-distribution.md) | [🏠 回目錄](../TUTORIAL.md)
+[< 上一章：發布與打包遊戲](10-distribution.md) | [🏠 回目錄](../TUTORIAL.md)
