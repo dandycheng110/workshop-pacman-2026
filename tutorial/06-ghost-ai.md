@@ -15,9 +15,13 @@ class Ghost:
         self.reset()
 
     def reset(self):
-        self.tx = float(GHOST_SPAWNS[self.idx][0])
-        self.ty = float(GHOST_SPAWNS[self.idx][1])
-        self.dx, self.dy = 1, 0
+        self.tile_x, self.tile_y = GHOST_SPAWNS[self.idx]
+        # 掃描四個方向，找到第一個不是牆壁的方向作為初始方向
+        for dx, dy in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
+            if not is_wall(self.tile_x + dx, self.tile_y + dy):
+                self.dx, self.dy = dx, dy
+                break
+        self.progress = 0.0
         self.speed = 0.06
         self.scared = False
         self.scared_timer = 0
@@ -29,30 +33,34 @@ class Ghost:
 
 ```python
 def update(self, pac_tx, pac_ty):
-    # 受驚計時
+    # 受驚倒數計時
     if self.scared and self.scared_timer > 0:
         self.scared_timer -= 1
         if self.scared_timer == 0:
             self.scared = False
 
-    # 在格子中心時決定下一步方向
-    if near_grid(self.tx) and near_grid(self.ty):
-        itx = int(round(self.tx))
-        ity = int(round(self.ty))
+    self.progress += self.speed
+    if self.progress >= 1.0:                          # 抵達下一格
+        new_tx = self.tile_x + self.dx
+        new_ty = self.tile_y + self.dy
+        if not (0 <= new_tx < COLS and 0 <= new_ty < ROWS):
+            # 抵達地圖邊界（隧道口）→ 原地掉頭
+            self.dx, self.dy = -self.dx, -self.dy
+            self.progress = 0.0
+            return
+        self.tile_x, self.tile_y = new_tx, new_ty
+        self.progress -= 1.0
+        # 詢問 AI 下一步要往哪走
         target = self.ai_fn(pac_tx, pac_ty)
-        best = pick_direction(itx, ity, self.dx, self.dy, *target, flee=self.scared)
+        best = pick_direction(
+            self.tile_x, self.tile_y, self.dx, self.dy,
+            *target, flee=self.scared, allow_tunnel=False
+        )
         if best:
             self.dx, self.dy = best
-
-    # 移動
-    nx = self.tx + self.dx * self.speed
-    ny = self.ty + self.dy * self.speed
-    if not is_blocked(nx, ny, 0.12):
-        self.tx = nx % COLS
-        self.ty = ny % ROWS
 ```
 
-幽靈的移動和小精靈最大的不同是：幽靈沒有「玩家預輸入」，方向完全由 `ai_fn` 計算得來的目標決定。每次到達格子中心，就重新詢問 AI 要往哪走。
+幽靈的移動和小精靈最大的不同是：幽靈沒有「玩家預輸入」，方向完全由 `ai_fn` 計算得來的目標決定。每次抵達格子，就重新詢問 AI 要往哪走。幽靈也不會穿越隧道（`allow_tunnel=False`）——抵達隧道口（地圖邊界）時直接掉頭。
 
 ### Blinky（直接追逐）
 
@@ -129,7 +137,7 @@ Clyde 的行為最特別：
 
 ```python
 self.ghosts = [Ghost(i) for i in range(4)]
-self.ghosts[0].ai_fn = chase_ai                               # Blinky
+# ghost[0] (Blinky) 使用 Ghost.__init__ 預設的 chase_ai，不需額外指派
 self.ghosts[1].ai_fn = make_pinky_ai(self.pac)                # Pinky
 self.ghosts[2].ai_fn = make_inky_ai(self.pac, self.ghosts[0]) # Inky
 self.ghosts[3].ai_fn = make_clyde_ai(self.ghosts[3], 1.0, float(ROWS - 2))  # Clyde

@@ -3,32 +3,40 @@
 
 ## 第七章：幽靈繪製
 
-幽靈的形狀是用像素逐格手繪的：
+幽靈的外觀來自 `main.pyxres` 的 Sprite 圖，儲存在圖片銀行 0，每隻幽靈有兩幀動畫（各 16×16 像素）：
+
+| y 座標 | 幽靈 | 對應索引 |
+|--------|------|---------|
+| 16     | Blinky（紅） | ghost[0] |
+| 32     | Inky（青）   | ghost[2] |
+| 48     | Clyde（橘）  | ghost[3] |
+| 64     | Pinky（粉）  | ghost[1] |
+| 80     | 受驚（深藍） | 所有幽靈 |
+
+兩幀分別存在 x=0 和 x=16，交替播放形成「飄動」動畫。受驚狀態只有一幀（x=0, y=80）。
+
+這個對應關係定義在模組層級的常數：
+
+```python
+_GHOST_SPRITE_Y = [16, 64, 32, 48]   # 索引 0~3 對應 Blinky/Pinky/Inky/Clyde
+```
+
+繪製程式碼：
 
 ```python
 def draw(self):
     px = MAZE_X + int(self.tx * TS)
     py = MAZE_Y + int(self.ty * TS)
-    col = COL_SCARED if self.scared else COL_GHOST[self.idx]
-    for dy in range(1, 7):
-        for dx in range(1, 7):
-            if dy <= 3:
-                # 上半部：半圓形
-                if (dx - 3.5) ** 2 + (dy - 3.5) ** 2 <= 3.5**2:
-                    pyxel.pset(px + dx, py + dy, col)
-            else:
-                # 下半部：整排（波浪裙擺）
-                pyxel.pset(px + dx, py + dy, col)
-    if not self.scared:
-        pyxel.pset(px + 2, py + 3, 7)   # 左眼
-        pyxel.pset(px + 5, py + 3, 7)   # 右眼
+    if self.scared:
+        pyxel.blt(px, py, 0, 0, 80, 16, 16, 0)
+    else:
+        sx = ((pyxel.frame_count // 4) % 2) * 16   # 每 4 幀切換一次動畫幀
+        pyxel.blt(px, py, 0, sx, _GHOST_SPRITE_Y[self.idx], 16, 16, 0)
 ```
 
-繪製邏輯：
-
-- 上半部（`dy <= 3`）：判斷像素是否在以 (3.5, 3.5) 為圓心、半徑 3.5 的圓內，形成半圓頭頂
-- 下半部（`dy > 3`）：全部填滿，形成方形裙擺（原版幽靈的波浪裙擺在這個解析度下簡化為直邊）
-- 受驚時：全部換成 `COL_SCARED`（藍色），並且不繪製眼睛
+- 每 4 幀（`frame_count // 4`）切換一次動畫幀（0 或 1），乘以 16 得到 Sprite 的 x 座標（0 或 16）
+- 受驚時固定使用受驚 Sprite，不受幽靈索引影響
+- 顏色 0（黑色）作為透明色（`colkey=0`），不繪製 Sprite 背景
 
 ---
 [< 上一章：四隻幽靈的 AI](06-ghost-ai.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：遊戲狀態機 >](08-state-machine.md)

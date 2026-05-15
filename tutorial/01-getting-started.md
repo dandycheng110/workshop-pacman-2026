@@ -26,7 +26,12 @@ uv run python main.py
 
 ## 專案結構
 
-整個遊戲只有一個檔案 `main.py`，由上到下大致分為：
+遊戲由兩個檔案組成：
+
+- `main.py`：所有遊戲邏輯
+- `main.pyxres`：Pyxel 資源檔，儲存小精靈和幽靈的像素圖（Sprite）
+
+`main.py` 由上到下大致分為：
 
 ```
 常數定義（顏色、格子、地圖）
@@ -51,6 +56,7 @@ Pyxel 採用固定頻率的遊戲迴圈。呼叫 `pyxel.run(update, draw)` 後�
 
 ```python
 pyxel.init(WIDTH, HEIGHT, title="Pac-Man", fps=30)
+pyxel.load("main.pyxres")   # 載入圖片資源（Sprite 圖）
 pyxel.run(self.update, self.draw)
 ```
 

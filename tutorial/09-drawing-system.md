@@ -11,7 +11,7 @@ def draw(self):
 
     # UI：分數與生命
     pyxel.text(4, 4, f"SCORE:{self.score}", COL_TEXT)
-    pyxel.text(110, 4, f"LIVES:{self.lives}", COL_TEXT)
+    pyxel.text(WIDTH - 38, 4, f"LIVES:{self.lives}", COL_TEXT)
 
     # 地圖牆壁
     for ty in range(ROWS):
@@ -23,13 +23,13 @@ def draw(self):
 
     # 豆子
     for (tx, ty), kind in self.dots.items():
-        px = MAZE_X + tx * TS + 3
-        py = MAZE_Y + ty * TS + 3
+        px = MAZE_X + tx * TS + TS // 2   # 格子中心
+        py = MAZE_Y + ty * TS + TS // 2
         if kind == "dot":
-            pyxel.pset(px, py, COL_DOT)
+            pyxel.rect(px - 1, py - 1, 3, 3, COL_DOT)   # 3×3 方塊
         else:
             if (pyxel.frame_count // 8) % 2 == 0:
-                pyxel.circ(px, py, 2, COL_PAC)
+                pyxel.circ(px, py, 4, COL_PAC)           # 半徑 4 的圓
 
     # 幽靈和小精靈
     for g in self.ghosts:
@@ -38,11 +38,11 @@ def draw(self):
     if self.state != "dead" or self.state_timer > 30:
         self.pac.draw()
 
-    # 覆蓋文字
+    # 覆蓋文字（置中顯示）
     if self.state == "win":
-        pyxel.text(55, 88, "YOU WIN!", COL_PAC)
+        pyxel.text(WIDTH // 2 - 20, HEIGHT // 2, "YOU WIN!", COL_PAC)
     elif self.state == "gameover":
-        pyxel.text(48, 88, "GAME OVER", 8)
+        pyxel.text(WIDTH // 2 - 22, HEIGHT // 2, "GAME OVER", 8)
 ```
 
 幾個值得注意的細節：
@@ -51,10 +51,10 @@ def draw(self):
 
 ```python
 if (pyxel.frame_count // 8) % 2 == 0:
-    pyxel.circ(px, py, 2, COL_PAC)
+    pyxel.circ(px, py, 4, COL_PAC)
 ```
 
-`pyxel.frame_count` 是從遊戲開始的累積幀數。整除 8 後取餘數為 0 或 1，讓能量豆每 8 幀切換一次顯示狀態，達到閃爍效果。
+`pyxel.frame_count` 是從遊戲開始的累積幀數。整除 8 後取餘數為 0 或 1，讓能量豆每 8 幀切換一次顯示狀態，達到閃爍效果。能量豆半徑 4（直徑 9 像素）相對於 16×16 格子有足夠的視覺存在感；普通豆子則繪製成 3×3 方塊。
 
 **死亡動畫**
 

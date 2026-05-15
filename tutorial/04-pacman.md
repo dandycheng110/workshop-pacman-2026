@@ -11,12 +11,13 @@ class Pacman:
         self.reset()
 
     def reset(self):
-        self.tx = 9.0      # 起始格子座標
-        self.ty = 14.0
+        self.tile_x = 9    # 起始格子座標（整數）
+        self.tile_y = 14
         self.dx = 0        # 目前移動方向
         self.dy = 0
         self.next_dx = 0   # 玩家請求的下一個方向
         self.next_dy = 0
+        self.progress = 0.0  # 朝下一格已走的比例
         self.speed = 0.08
         self.anim = 0      # 動畫計時器
 ```
@@ -47,33 +48,33 @@ def update(self, dots):
 ### 轉彎邏輯
 
 ```python
-    nx = self.tx + self.dx * self.speed
-    ny = self.ty + self.dy * self.speed
+    # 靜止時，若下一方向不是牆壁就開始移動
+    if self.dx == 0 and self.dy == 0:
+        if not is_wall(self.tile_x + self.next_dx, self.tile_y + self.next_dy):
+            self.dx, self.dy = self.next_dx, self.next_dy
 
-    if near_grid(self.tx) and near_grid(self.ty):
-        itx = int(round(self.tx))
-        ity = int(round(self.ty))
-        ntx = itx + self.next_dx
-        nty = ity + self.next_dy
-        if not is_wall(ntx, nty):
-            self.dx = self.next_dx
-            self.dy = self.next_dy
-
-    if not is_blocked(nx, ny, 0.15):
-        self.tx = nx % COLS
-        self.ty = ny % ROWS
-    else:
-        self.dx = 0
-        self.dy = 0
+    if self.dx != 0 or self.dy != 0:
+        self.progress += self.speed
+        if self.progress >= 1.0:                          # 抵達下一格
+            self.tile_x = (self.tile_x + self.dx) % COLS
+            self.tile_y = (self.tile_y + self.dy) % ROWS
+            self.progress -= 1.0
+            # 嘗試轉彎
+            if not is_wall(self.tile_x + self.next_dx, self.tile_y + self.next_dy):
+                self.dx, self.dy = self.next_dx, self.next_dy
+            # 前方是牆壁就停下
+            elif is_wall(self.tile_x + self.dx, self.tile_y + self.dy):
+                self.dx, self.dy = 0, 0
+                self.progress = 0.0
 ```
 
 這段邏輯有三個步驟：
 
-1. **計算新位置**：沿目前方向走一步
-2. **嘗試轉彎**：如果接近格子中心，且玩家請求的方向不是牆壁，就轉過去
-3. **套用移動**：如果新位置不被牆壁阻擋就移動，否則停下
+1. **靜止啟動**：如果目前沒有在動（`dx == dy == 0`），嘗試用 `next_dx`/`next_dy` 開始移動
+2. **推進進度**：每幀增加 `progress`；到達 1.0 代表抵達下一個格子
+3. **抵達時轉彎**：如果玩家請求的方向可以走就轉過去；若連目前方向都是牆就停下
 
-注意步驟 2 只修改方向 (`dx`/`dy`)，不立刻移動位置。實際移動在步驟 3 用**更新後的方向**計算。
+轉彎只發生在「剛抵達格子」的瞬間，確保小精靈永遠對齊格子邊界，不會卡入牆角。
 
 ### 吃豆子
 
@@ -88,37 +89,38 @@ def update(self, dots):
 
 `int(self.tx + 0.5)` 等同於四捨五入，取小精靈目前最近的格子。如果該格有豆子，就從字典中移除並回傳豆子類型（`"dot"` 或 `"power"`）。回傳值在 `App.update` 中用來加分或觸發「受驚」狀態。
 
-### 嘴巴動畫
+### Sprite 動畫
+
+小精靈的外觀來自 `main.pyxres` 的 Sprite 圖，儲存在圖片銀行（image bank）0 的 y=0 列，共三格，每格 16×16 像素：
+
+| x 座標 | 動畫幀 |
+|--------|--------|
+| 0      | 嘴巴全開 |
+| 16     | 嘴巴半開 |
+| 32     | 嘴巴閉合 |
+
+所有 Sprite 都面向**左方**，向右移動時用負寬度（`w = -16`）水平翻轉。
 
 ```python
+# 動畫幀序列：開 → 半開 → 閉 → 半開 → 開（每個狀態持續 3 幀）
+_PAC_FRAMES = [0, 0, 0, 1, 1, 1, 2, 2, 2, 1, 1, 1]
+
 def draw(self):
-    self.anim = (self.anim + 1) % 20
-    mouth = (self.anim % 10) / 10.0 * 0.45
+    self.anim = (self.anim + 1) % 12
+    sx = _PAC_FRAMES[self.anim] * 16   # sprite 在圖片銀行中的 x 座標
     px = MAZE_X + int(self.tx * TS)
     py = MAZE_Y + int(self.ty * TS)
-    cx, cy, r = px + 4, py + 4, 3
-    angle_offset = math.atan2(self.dy, self.dx) if (self.dx != 0 or self.dy != 0) else 0
-
-    for dy in range(-r, r + 1):
-        for dx in range(-r, r + 1):
-            if dx * dx + dy * dy <= r * r:
-                ang = math.atan2(dy, dx) - angle_offset
-                # 正規化角度到 [-π, π]
-                while ang > math.pi:  ang -= 2 * math.pi
-                while ang < -math.pi: ang += 2 * math.pi
-                if abs(ang) > mouth * math.pi:
-                    pyxel.pset(cx + dx, cy + dy, COL_PAC)
+    w = -16 if self.dx > 0 else 16    # 向右移動時翻轉
+    pyxel.blt(px, py, 0, sx, 0, w, 16, 0)
 ```
 
-動畫原理：
+`pyxel.blt(x, y, img, u, v, w, h, colkey)` 的參數：
 
-- `anim` 每幀加一，`% 20` 讓它在 0–19 之間循環
-- `anim % 10` 讓嘴巴在 0–9 之間來回（`% 10` 後再除以 10.0 得到 0.0–0.9 的比例）
-- `mouth * math.pi` 是嘴巴張開的角度（最大約 0.45π ≈ 81°）
-- 遍歷半徑 3 的圓形區域內每個像素，計算該像素相對於小精靈中心的角度
-- 只有角度「不在嘴巴開口範圍內」的像素才被繪製
-
-`angle_offset` 讓嘴巴朝向移動方向。`math.atan2(self.dy, self.dx)` 回傳方向向量的角度（弧度）。
+- `x, y`：螢幕上的繪製起點（格子左上角）
+- `img=0`：使用圖片銀行 0
+- `u, v`：Sprite 在圖片銀行中的起始座標
+- `w, h`：寬高；`w` 為負數時水平翻轉
+- `colkey=0`：顏色 0（黑色）視為透明，不繪製
 
 ---
 [< 上一章：移動與碰撞偵測](03-movement-and-collision.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：方向選擇演算法 >](05-direction-algorithm.md)
