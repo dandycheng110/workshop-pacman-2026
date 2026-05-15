@@ -564,6 +564,64 @@ class TestTunnelTraversal(unittest.TestCase):
         )
 
 
+class TestGhostTunnelRestriction(unittest.TestCase):
+    """Ghosts must not pass through tunnels — only Pac-Man can use them."""
+
+    TUNNEL_ROW = 6
+
+    def _ghost_at(self, tx, ty, dx, dy):
+        g = main.Ghost(0)
+        g.tile_x = tx
+        g.tile_y = ty
+        g.dx = dx
+        g.dy = dy
+        g.progress = 0.0
+        g.ai_fn = lambda pac_tx, pac_ty: (float(tx), float(ty))
+        return g
+
+    def test_pick_direction_blocks_right_exit_for_ghost(self):
+        # At the rightmost tunnel tile moving right, allow_tunnel=False must block exit.
+        result = main.pick_direction(
+            main.COLS - 1, self.TUNNEL_ROW,
+            dx=1, dy=0,
+            target_x=float(main.COLS + 5), target_y=float(self.TUNNEL_ROW),
+            allow_tunnel=False,
+        )
+        self.assertNotEqual(result, (1, 0),
+                            "Ghost should not be allowed to exit right tunnel")
+
+    def test_pick_direction_blocks_left_exit_for_ghost(self):
+        # At the leftmost tunnel tile moving left, allow_tunnel=False must block exit.
+        result = main.pick_direction(
+            0, self.TUNNEL_ROW,
+            dx=-1, dy=0,
+            target_x=-5.0, target_y=float(self.TUNNEL_ROW),
+            allow_tunnel=False,
+        )
+        self.assertNotEqual(result, (-1, 0),
+                            "Ghost should not be allowed to exit left tunnel")
+
+    def test_ghost_does_not_traverse_right_tunnel(self):
+        # Ghost heading into the right tunnel exit must not wrap to the left side.
+        g = self._ghost_at(main.COLS - 2, self.TUNNEL_ROW, dx=1, dy=0)
+        prev_tx = g.tile_x
+        for _ in range(GHOST_TILE_FRAMES * 4):
+            g.update(float(main.COLS), float(self.TUNNEL_ROW))
+            if prev_tx == main.COLS - 1 and g.tile_x == 0:
+                self.fail("Ghost wrapped through right tunnel (tile_x jumped COLS-1 → 0)")
+            prev_tx = g.tile_x
+
+    def test_ghost_does_not_traverse_left_tunnel(self):
+        # Ghost heading into the left tunnel exit must not wrap to the right side.
+        g = self._ghost_at(1, self.TUNNEL_ROW, dx=-1, dy=0)
+        prev_tx = g.tile_x
+        for _ in range(GHOST_TILE_FRAMES * 4):
+            g.update(0.0, float(self.TUNNEL_ROW))
+            if prev_tx == 0 and g.tile_x == main.COLS - 1:
+                self.fail("Ghost wrapped through left tunnel (tile_x jumped 0 → COLS-1)")
+            prev_tx = g.tile_x
+
+
 class TestTileProgressMovement(unittest.TestCase):
     """Verify key properties of the tile-progress movement model."""
 

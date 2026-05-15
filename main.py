@@ -76,6 +76,7 @@ def pick_direction(
     target_x: float,
     target_y: float,
     flee: bool = False,
+    allow_tunnel: bool = True,
 ) -> tuple[int, int] | None:
     best: tuple[int, int] | None = None
     best_score: float | None = None
@@ -83,6 +84,8 @@ def pick_direction(
         if ddx == -dx and ddy == -dy:
             continue
         ntx, nty = itx + ddx, ity + ddy
+        if not allow_tunnel and not (0 <= ntx < COLS and 0 <= nty < ROWS):
+            continue
         if is_wall(ntx, nty):
             continue
         dist2 = (ntx - target_x) ** 2 + (nty - target_y) ** 2
@@ -235,11 +238,17 @@ class Ghost:
 
         self.progress += self.speed
         if self.progress >= 1.0:
-            self.tile_x = (self.tile_x + self.dx) % COLS
-            self.tile_y = (self.tile_y + self.dy) % ROWS
+            new_tx = self.tile_x + self.dx
+            new_ty = self.tile_y + self.dy
+            if not (0 <= new_tx < COLS and 0 <= new_ty < ROWS):
+                self.dx, self.dy = -self.dx, -self.dy
+                self.progress = 0.0
+                return
+            self.tile_x = new_tx
+            self.tile_y = new_ty
             self.progress -= 1.0
             target = self.ai_fn(pac_tx, pac_ty)
-            best = pick_direction(self.tile_x, self.tile_y, self.dx, self.dy, *target, flee=self.scared)
+            best = pick_direction(self.tile_x, self.tile_y, self.dx, self.dy, *target, flee=self.scared, allow_tunnel=False)
             if best:
                 self.dx, self.dy = best
 
