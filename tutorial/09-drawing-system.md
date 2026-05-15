@@ -1,3 +1,6 @@
+[< 上一章：遊戲狀態機](08-state-machine.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：延伸挑戰 >](10-challenges.md)
+---
+
 ## 第九章：繪圖系統
 
 ### App.draw 主邏輯
@@ -61,3 +64,6 @@ if self.state != "dead" or self.state_timer > 30:
 ```
 
 在死亡狀態的前 30 幀仍然顯示小精靈，後 30 幀隱藏，形成閃爍消失的效果。
+
+---
+[< 上一章：遊戲狀態機](08-state-machine.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：延伸挑戰 >](10-challenges.md)

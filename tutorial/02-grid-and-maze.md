@@ -1,3 +1,6 @@
+[< 上一章：事前準備與專案架構](01-getting-started.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：移動與碰撞偵測 >](03-movement-and-collision.md)
+---
+
 ## 第二章：顏色、格子與地圖
 
 ### Pyxel 的 16 色調色盤
@@ -94,3 +97,6 @@ GHOST_SPAWNS = [
 ```
 
 之後建立幽靈時，`Ghost(idx)` 直接取 `GHOST_SPAWNS[idx]` 作為初始位置，不需要在類別裡寫死座標。
+
+---
+[< 上一章：事前準備與專案架構](01-getting-started.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：移動與碰撞偵測 >](03-movement-and-collision.md)

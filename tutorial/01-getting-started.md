@@ -1,6 +1,18 @@
-## 第一章：認識 Pyxel 與專案架構
+# 第一章：事前準備與專案架構
 
-### Pyxel 是什麼？
+## 事前準備
+
+安裝 [uv](https://docs.astral.sh/uv/getting-started/installation/) 後，在專案目錄執行：
+
+```bash
+uv run python main.py
+```
+
+即可啟動遊戲。方向鍵或 WASD 控制小精靈移動，Q 鍵離開。
+
+---
+
+## Pyxel 是什麼？
 
 [Pyxel](https://github.com/kitao/pyxel) 是一個專為復古像素風格遊戲設計的 Python 遊戲引擎。它的設計哲學刻意限制資源：
 
@@ -13,7 +25,7 @@
 
 這些限制和 1980 年代的遊戲硬體相近，讓製作者能專注在遊戲設計本身，而不是無窮無盡的視覺調整。
 
-### 專案結構
+## 專案結構
 
 整個遊戲只有一個檔案 `main.py`，由上到下大致分為：
 
@@ -31,7 +43,7 @@ Ghost 類別（幽靈）
 App 類別（遊戲主迴圈）
 ```
 
-### Pyxel 的遊戲迴圈
+## Pyxel 的遊戲迴圈
 
 Pyxel 採用固定頻率的遊戲迴圈。呼叫 `pyxel.run(update, draw)` 後，每一幀會依序執行：
 
@@ -44,3 +56,6 @@ pyxel.run(self.update, self.draw)
 ```
 
 `fps=30` 代表每秒執行 30 次 update 和 draw，這也是本專案中所有「計時器」和「速度」的時間基準。
+
+---
+[🏠 回目錄](../TUTORIAL.md) | [下一章：顏色、格子與地圖 >](02-grid-and-maze.md)

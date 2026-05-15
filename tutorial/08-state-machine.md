@@ -1,3 +1,6 @@
+[< 上一章：幽靈繪製](07-ghost-rendering.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：繪圖系統 >](09-drawing-system.md)
+---
+
 ## 第八章：遊戲狀態機
 
 ### 狀態定義
@@ -114,3 +117,6 @@ def build_dots(self):
 ```
 
 豆子用字典存放，以格子座標 `(tx, ty)` 為 key。字典查詢的時間複雜度是 O(1)，每幀的豆子碰撞檢查只需要一次字典查詢，不需要遍歷所有豆子。吃掉豆子用 `dict.pop(key)` 同時查詢並移除。當 `self.dots` 為空時代表全部吃完，觸發勝利。
+
+---
+[< 上一章：幽靈繪製](07-ghost-rendering.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：繪圖系統 >](09-drawing-system.md)

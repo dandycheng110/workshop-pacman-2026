@@ -1,3 +1,6 @@
+[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md)
+---
+
 ## 附錄：常用 Pyxel API 速查
 
 | 函式 | 用途 |
@@ -13,3 +16,6 @@
 | `pyxel.btnp(key)` | 按鍵剛按下？ |
 | `pyxel.frame_count` | 累積幀數 |
 | `pyxel.quit()` | 結束遊戲 |
+
+---
+[< 上一章：延伸挑戰](10-challenges.md) | [🏠 回目錄](../TUTORIAL.md)

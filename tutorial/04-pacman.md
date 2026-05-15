@@ -1,3 +1,6 @@
+[< 上一章：移動與碰撞偵測](03-movement-and-collision.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：方向選擇演算法 >](05-direction-algorithm.md)
+---
+
 ## 第四章：小精靈——輸入處理與動畫
 
 ### Pacman 類別
@@ -88,7 +91,11 @@ def update(self, dots):
 def draw(self):
     self.anim = (self.anim + 1) % 20
     mouth = (self.anim % 10) / 10.0 * 0.45
-    ...
+    px = MAZE_X + int(self.tx * TS)
+    py = MAZE_Y + int(self.ty * TS)
+    cx, cy, r = px + 4, py + 4, 3
+    angle_offset = math.atan2(self.dy, self.dx) if (self.dx != 0 or self.dy != 0) else 0
+
     for dy in range(-r, r + 1):
         for dx in range(-r, r + 1):
             if dx * dx + dy * dy <= r * r:
@@ -109,3 +116,6 @@ def draw(self):
 - 只有角度「不在嘴巴開口範圍內」的像素才被繪製
 
 `angle_offset` 讓嘴巴朝向移動方向。`math.atan2(self.dy, self.dx)` 回傳方向向量的角度（弧度）。
+
+---
+[< 上一章：移動與碰撞偵測](03-movement-and-collision.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：方向選擇演算法 >](05-direction-algorithm.md)

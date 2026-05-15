@@ -1,3 +1,6 @@
+[< 上一章：方向選擇演算法](05-direction-algorithm.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：幽靈繪製 >](07-ghost-rendering.md)
+---
+
 ## 第六章：四隻幽靈的 AI
 
 原版 Pac-Man 的四隻幽靈各有不同的追逐策略，這也是遊戲耐玩度的關鍵。本實作還原了原版的 AI 邏輯。
@@ -131,3 +134,6 @@ self.ghosts[1].ai_fn = make_pinky_ai(self.pac)                # Pinky
 self.ghosts[2].ai_fn = make_inky_ai(self.pac, self.ghosts[0]) # Inky
 self.ghosts[3].ai_fn = make_clyde_ai(self.ghosts[3], 1.0, float(ROWS - 2))  # Clyde
 ```
+
+---
+[< 上一章：方向選擇演算法](05-direction-algorithm.md) | [🏠 回目錄](../TUTORIAL.md) | [下一章：幽靈繪製 >](07-ghost-rendering.md)
