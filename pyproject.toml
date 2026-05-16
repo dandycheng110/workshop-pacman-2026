@@ -1,7 +1,7 @@
 [project]
-name = "pacman"
-version = "0.1.0"
-description = "Add your description here"
+name = "pacman-2026"
+version = "2026.1.0"
+description = "Pac-Man 2026 進階版：關卡、Scatter/Chase、水果、連擊、音效"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
